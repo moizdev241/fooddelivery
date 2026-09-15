@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "176800658070",
+    "project_id": "booking-app-b5c26",
+    "storage_bucket": "booking-app-b5c26.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:176800658070:android:01609d8a9dd1fbb595c8b7",
+        "android_client_info": {
+          "package_name": "com.fooddeliverytesting"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "176800658070-rhvje82vtq17p2ktqg5o5gqtrogssrv2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.fooddeliverytesting",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "176800658070-pu4h1qbgcqco4br57djbggpjlagmeg30.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDfgODnGi8zXnGPFdzb4R9CxIOMhQbgrk4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "176800658070-pu4h1qbgcqco4br57djbggpjlagmeg30.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "176800658070-m1qejcr0o9ijhn9a81goire93549pebv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.fooddeliverytesting"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

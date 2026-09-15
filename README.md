@@ -1,97 +1,107 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# ForkIt — Food Delivery (Demo)
 
-# Getting Started
+A minimal React Native food delivery app built for a technical screening. Not
+production-hardened — scoped to demonstrate architecture, auth/role handling,
+and core CRUD/ordering flows with Firebase.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## Stack
 
-## Step 1: Start Metro
+- React Native CLI (0.87), TypeScript
+- React Navigation (native-stack + bottom-tabs)
+- Redux Toolkit + `redux-persist` (cart persists locally; auth state is
+  re-derived from Firebase's own session on launch)
+- Firebase (`@react-native-firebase`): Auth (Google Sign-In) + Firestore
+- Single-accent light theme (`src/theme`), following Apple HIG spacing/typography conventions
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## Folder structure
 
-To start the Metro dev server, run the following command from the root of your React Native project:
-
-```sh
-# Using npm
-npm start
-
-# OR using Yarn
-yarn start
+```
+src/
+  theme/         design tokens — colors, typography, spacing, radius
+  constants/     screen names, roles, order status enums
+  types.ts       shared domain types (UserProfile, Restaurant, Meal, Order)
+  firebase/      single re-export point for the firebase modular SDK
+  services/      Firestore/Auth reads & writes (authService, restaurantService, mealService, orderService, userService)
+  redux/         store, rootReducer, slices (user, cart)
+  navigation/    AuthNavigator, UserTabsNavigator, OwnerTabsNavigator, AppNavigator, RootNavigator
+  components/    atoms (Button, TextInput, Txt, Badge, …) and molecules (RestaurantCard, MealRow, OrderCard)
+  screens/       one folder per screen: `Screen.screen.tsx` + `styles.ts`
 ```
 
-## Step 2: Build and run your app
+## Data model (Firestore)
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+- `users/{uid}` — `name, email, role: 'user' | 'owner', isBlocked`
+- `restaurants/{id}` — `ownerId, name, description`
+- `restaurants/{id}/meals/{id}` — `name, description, price`
+- `orders/{id}` — `userId, userName, restaurantId, restaurantName, items[], totalAmount, status, statusHistory[], createdAt`
 
-### Android
+`firestore.rules` at the project root enforces: owners can only CRUD their
+own restaurants/meals, customers can only create orders for themselves, and orders can
+only move forward through the status chain below, one step at a time, each
+step gated to the one role that's allowed to make it — see `orderService.ts`
+for the corresponding named actions (`cancelOrder`, `startProcessing`, etc.)
+and `OrderCard`'s "View history" toggle for the `statusHistory` timeline.
 
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
+```
+Placed --(Customer)--> Canceled
+Placed --(Owner)--> Processing --(Owner)--> In Route --(Owner)--> Delivered --(Customer)--> Received
 ```
 
-### iOS
+## Auth: Google Sign-In
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+`SignIn.screen.tsx` is a single "Continue with Google" button —
+`authService.signInWithGoogle` gets an ID token from
+`@react-native-google-signin/google-signin` and exchanges it for a Firebase
+session via `GoogleAuthProvider`. First-time users land on
+`CompleteProfile.screen.tsx` to pick a role (Customer / Restaurant Owner) —
+name and email come straight from the Google account, so that screen only
+asks for the one thing Google can't tell us — before a Firestore profile is
+created. See `pendingAuth` in `userSlice` and the branch in
+`RootNavigator`/`AuthNavigator` that drives it.
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+## What I still need from you
+
+1. **A Firebase project** with:
+   - **Authentication → Sign-in method → Google** enabled (this also requires
+     setting a public app name + support email on the Google Cloud OAuth
+     consent screen the first time — the console walks you through it).
+   - **Firestore Database** created (start in test mode, then apply `firestore.rules`).
+2. **An Android app** registered in that project with package name
+   `com.fooddeliverytesting` → download `google-services.json` → place it at
+   `android/app/google-services.json`. Google Sign-In on Android also
+   **requires a SHA-1 fingerprint** registered on that app (Project Settings
+   → your Android app → Add fingerprint) or it fails outright — for the
+   debug build that's:
+   ```sh
+   keytool -list -v -keystore android/app/debug.keystore -alias androiddebugkey -storepass android -keypass android
+   ```
+3. **An iOS app** registered with bundle ID `com.fooddeliverytesting` →
+   download `GoogleService-Info.plist` → drag it into the `FoodDeliveryTesting`
+   target in Xcode (`ios/FoodDeliveryTesting.xcworkspace`), checking "Copy
+   items if needed".
+4. **The Web client ID** Firebase auto-creates once Google sign-in is
+   enabled (Authentication → Sign-in method → Google → Web SDK configuration,
+   or the `client_id` entry with `"client_type": 3` in `google-services.json`)
+   → paste it into `GOOGLE_WEB_CLIENT_ID` in `src/constants/constants.ts`.
+   Not a secret, just needs to match your project.
+
+Once those are in place:
 
 ```sh
-bundle install
+npm install
+cd ios && pod install && cd ..
+npm run ios      # or: npm run android
 ```
 
-Then, and every time you update your native dependencies, run:
+Note: two of the app's queries (order history, incoming orders) combine an
+equality filter with `orderBy`, which Firestore serves only with a composite
+index. The first time each query runs, Firestore/Metro will log an error
+with a direct link to auto-create the missing index — just click it once.
 
-```sh
-bundle exec pod install
-```
+## Trying both roles
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
-```
-
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
-
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
-
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+Sign in with two different Google accounts, picking **Customer** on one and
+**Restaurant Owner** on the other when each completes their profile. As the
+owner: create a restaurant, add a few meals, then sign in as the customer to
+browse and place an order — it shows up under the owner's **Orders** tab in
+real time.

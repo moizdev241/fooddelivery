@@ -1,0 +1,80 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function myRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isRestaurantOwner() {
+      return isSignedIn() && myRole() == 'owner';
+    }
+
+    // Users
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(userId);
+      // Users may edit their own profile, but not their own block status.
+      // Restaurant owners may only toggle isBlocked on customer accounts.
+      allow update: if (isOwner(userId)
+                          && !('isBlocked' in request.resource.data.diff(resource.data).affectedKeys()))
+                        || (isRestaurantOwner()
+                          && resource.data.role == 'user'
+                          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isBlocked']));
+      allow delete: if false;
+    }
+
+    // Restaurants — CRUD limited to the owning restaurant owner.
+    match /restaurants/{restaurantId} {
+      allow read: if isSignedIn();
+      allow create: if isRestaurantOwner() && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+
+      match /meals/{mealId} {
+        allow read: if isSignedIn();
+        allow write: if isSignedIn()
+          && get(/databases/$(database)/documents/restaurants/$(restaurantId)).data.ownerId == request.auth.uid;
+      }
+    }
+
+    // Orders — customers see and create their own; the owning restaurant
+    // can see incoming orders too. Status only ever moves forward through a
+    // fixed chain, and each step in that chain belongs to exactly one role:
+    //   Placed --(user)--> Canceled
+    //   Placed --(owner)--> Processing --(owner)--> In Route --(owner)--> Delivered --(user)--> Received
+    match /orders/{orderId} {
+      function isOrderOwner() {
+        return get(/databases/$(database)/documents/restaurants/$(resource.data.restaurantId)).data.ownerId == request.auth.uid;
+      }
+
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isOrderOwner());
+
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && myRole() == 'user'
+        && request.resource.data.status == 'placed';
+
+      allow update: if isSignedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'statusHistory'])
+        && (
+          (resource.data.userId == request.auth.uid
+            && ((resource.data.status == 'placed' && request.resource.data.status == 'canceled')
+              || (resource.data.status == 'delivered' && request.resource.data.status == 'received')))
+          || (isOrderOwner()
+            && ((resource.data.status == 'placed' && request.resource.data.status == 'processing')
+              || (resource.data.status == 'processing' && request.resource.data.status == 'in_route')
+              || (resource.data.status == 'in_route' && request.resource.data.status == 'delivered')))
+        );
+
+      allow delete: if false;
+    }
+  }
+}

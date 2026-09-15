@@ -8,6 +8,11 @@ require Pod::Executable.execute_command('node', ['-p',
 platform :ios, min_ios_version_supported
 prepare_react_native_project!
 
+# Firebase ships several Swift pods (FirebaseAuth, FirebaseFirestore, ...)
+# that don't define Clang modules on their own; without this, static-library
+# builds fail to import them from Swift (e.g. AppDelegate.swift).
+use_modular_headers!
+
 linkage = ENV['USE_FRAMEWORKS']
 if linkage != nil
   Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
