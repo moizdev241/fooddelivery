@@ -22,10 +22,11 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isSignedIn();
       allow create: if isOwner(userId);
-      // Users may edit their own profile, but not their own block status.
+      // Users may edit their own profile, but the role picked at signup is
+      // permanent and their own block status isn't self-editable either.
       // Restaurant owners may only toggle isBlocked on customer accounts.
       allow update: if (isOwner(userId)
-                          && !('isBlocked' in request.resource.data.diff(resource.data).affectedKeys()))
+                          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isBlocked', 'role']))
                         || (isRestaurantOwner()
                           && resource.data.role == 'user'
                           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isBlocked']));

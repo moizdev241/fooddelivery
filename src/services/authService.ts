@@ -7,7 +7,6 @@ import {
   signOut,
   doc,
   setDoc,
-  updateDoc,
   getDoc,
   serverTimestamp,
 } from '../firebase';
@@ -69,11 +68,4 @@ export const createUserProfile = async (
   const profile: UserProfile = { uid, name, email, role, isBlocked: false };
   await setDoc(doc(db, 'users', uid), { ...profile, createdAt: serverTimestamp() });
   return profile;
-};
-
-// Demo-only convenience: lets a single account flip between the Customer
-// and Restaurant Owner experience from the Profile screen, rather than
-// requiring a second Google account to see both roles.
-export const updateUserRole = async (uid: string, role: UserRole): Promise<void> => {
-  await updateDoc(doc(db, 'users', uid), { role });
 };

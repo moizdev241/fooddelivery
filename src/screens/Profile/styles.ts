@@ -67,39 +67,6 @@ const styles = StyleSheet.create({
     fontWeight: theme.typography.weight.semibold,
     color: theme.palette.primary,
   },
-  section: {
-    marginBottom: theme.spacing.xl,
-  },
-  sectionLabel: {
-    fontSize: theme.typography.size.sub,
-    fontWeight: theme.typography.weight.semibold,
-    color: theme.palette.secondaryLabel,
-    marginBottom: theme.spacing.sm,
-  },
-  segment: {
-    flexDirection: 'row',
-    backgroundColor: theme.palette.surface,
-    borderRadius: theme.radius.r1,
-    padding: 4,
-  },
-  segmentOption: {
-    flex: 1,
-    paddingVertical: theme.spacing.sm,
-    borderRadius: theme.radius.r0,
-    alignItems: 'center',
-  },
-  segmentOptionActive: {
-    backgroundColor: theme.palette.primary,
-  },
-  segmentText: {
-    fontSize: theme.typography.size.sub,
-    fontWeight: theme.typography.weight.medium,
-    color: theme.palette.secondaryLabel,
-  },
-  segmentTextActive: {
-    color: theme.palette.white,
-    fontWeight: theme.typography.weight.semibold,
-  },
   logoutButton: {
     marginTop: 'auto',
     marginBottom: theme.spacing.lg,
